@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#6f2dbd" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="FIMD France" />
+  <title>FIMD France</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.7.1/dist/maplibre-gl.css" />
+  <style>
+:root{
+  --bg:#f5f6f8;--panel:#fff;--text:#15202b;--muted:#667085;--line:#dce1e8;--accent:#6f2dbd;
+  --purple:#6f2dbd;--green2:#1f7a4f;--green1:#79b86b;--yellow:#e4cf61;--orange:#e69b45;--red1:#d95c4f;--red2:#8f1d24;--nodata:#cfd4dc;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:var(--bg)}
+button,input,select{font:inherit}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;background:#fff;border-bottom:1px solid var(--line)}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}.topbar h1{margin:1px 0 0;font-size:21px;line-height:1.1}
+.status-pill{font-size:12px;padding:6px 9px;border-radius:999px;font-weight:700;white-space:nowrap}.status-pill.loading{background:#fff2cc;color:#725400}.status-pill.ready{background:#e5f5eb;color:#17643d}.status-pill.warn{background:#fdeceb;color:#902d27}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:12px;padding:12px;max-width:1800px;margin:0 auto}
+.map-shell,.details{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative}
+.toolbar{display:flex;gap:8px;padding:10px;border-bottom:1px solid var(--line);background:#fff}.search-form{display:flex;gap:8px;flex:1;min-width:0}.search-form input{min-width:0;flex:1;border:1px solid #cbd2dc;border-radius:10px;padding:10px 12px;font-size:16px}.toolbar select{border:1px solid #cbd2dc;border-radius:10px;padding:9px 10px;background:#fff;min-width:165px}.toolbar button{border:0;border-radius:10px;background:var(--accent);color:white;padding:10px 14px;font-weight:700;cursor:pointer}
+#map{height:calc(100vh - 135px);min-height:540px;background:#e9edf2}.map-notice{position:absolute;top:72px;left:50%;transform:translateX(-50%);z-index:4;background:rgba(21,32,43,.9);color:#fff;padding:8px 11px;border-radius:9px;font-size:12px;max-width:min(86%,520px);text-align:center;pointer-events:none}.map-notice.hidden{display:none}
+.legend{position:absolute;z-index:4;left:12px;bottom:32px;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:12px;padding:9px 10px;box-shadow:0 4px 15px rgba(0,0,0,.08);font-size:11px;max-width:230px}.legend>div{display:grid;grid-template-columns:13px 1fr auto;align-items:center;gap:7px;margin:4px 0}.legend small{color:var(--muted)}.swatch{width:13px;height:10px;border-radius:3px}.purple{background:var(--purple)}.green2{background:var(--green2)}.green1{background:var(--green1)}.yellow{background:var(--yellow)}.orange{background:var(--orange)}.red1{background:var(--red1)}.red2{background:var(--red2)}
+.details{padding:16px;align-self:start}.details-empty{text-align:center;padding:44px 12px}.details-icon{width:54px;height:54px;margin:0 auto 12px;display:grid;place-items:center;border-radius:14px;background:#f0e7fb;color:var(--accent);font-weight:800}.details h2{font-size:20px;margin:3px 0 7px}.details p{color:var(--muted);margin:0}.hidden{display:none!important}.kicker{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}.score-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:18px 0}.score{font-size:42px;line-height:.95;font-weight:800}.score-label{font-size:12px;color:var(--muted);margin-top:5px}.category{border-radius:999px;padding:6px 9px;font-size:12px;font-weight:800;background:#eef1f4}.metrics{margin:0}.metrics>div{display:flex;justify-content:space-between;gap:15px;border-top:1px solid #edf0f3;padding:10px 0}.metrics dt{color:var(--muted);font-size:13px}.metrics dd{margin:0;text-align:right;font-weight:700;font-size:13px}.method-card{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.method-card h3{font-size:14px;margin:0 0 7px}.method-card p{font-size:12px;line-height:1.5}.method-card .small{margin-top:8px;font-size:11px}
+.maplibregl-popup-content{border-radius:10px;padding:10px 12px;font:12px/1.35 system-ui,-apple-system,sans-serif}.maplibregl-ctrl-group{border-radius:10px!important}
+@media(max-width:900px){.layout{grid-template-columns:1fr;padding:8px}.details{order:2}.toolbar{flex-wrap:wrap}.search-form{width:100%}.toolbar select{flex:1}.toolbar button{min-width:90px}#map{height:64vh;min-height:430px}.legend{bottom:26px;max-width:205px}.topbar{padding:12px 13px}.topbar h1{font-size:19px}}
+@media(max-width:480px){.status-pill{max-width:130px;overflow:hidden;text-overflow:ellipsis}.legend{font-size:10px;left:8px;bottom:24px}.map-notice{top:118px}.toolbar select{width:100%}#map{height:61vh;min-height:390px}}
+
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">French Index of Multiple Deprivation</div>
+      <h1>FIMD France</h1>
+    </div>
+    <div id="dataBadge" class="status-pill loading">Loading data…</div>
+  </header>
+
+  <main class="layout">
+    <section class="map-shell" aria-label="Interactive FIMD map">
+      <div class="toolbar">
+        <form id="searchForm" class="search-form">
+          <input id="searchInput" type="search" autocomplete="off" placeholder="Search La Rochelle, an address, postcode…" aria-label="Search France" />
+          <button type="submit">Search</button>
+        </form>
+        <select id="metricSelect" aria-label="Map metric">
+          <option value="fimd">Overall FIMD</option>
+          <option value="income">Median income</option>
+          <option value="poverty">Poverty rate</option>
+        </select>
+      </div>
+      <div id="map"></div>
+      <div id="mapNotice" class="map-notice">Search for a place or zoom in to reveal IRIS neighbourhoods.</div>
+      <div class="legend" aria-label="Map legend">
+        <div><span class="swatch purple"></span><b>Extreme affluence</b><small>top 5%</small></div>
+        <div><span class="swatch green2"></span><span>Very affluent</span><small>5–20%</small></div>
+        <div><span class="swatch green1"></span><span>Affluent</span><small>20–40%</small></div>
+        <div><span class="swatch yellow"></span><span>Middle</span><small>40–60%</small></div>
+        <div><span class="swatch orange"></span><span>Moderate deprivation</span><small>60–80%</small></div>
+        <div><span class="swatch red1"></span><span>High deprivation</span><small>80–90%</small></div>
+        <div><span class="swatch red2"></span><span>Extreme deprivation</span><small>bottom 10%</small></div>
+      </div>
+    </section>
+
+    <aside class="details" aria-live="polite">
+      <div class="details-empty" id="detailsEmpty">
+        <div class="details-icon">FR</div>
+        <h2>Select a neighbourhood</h2>
+        <p>Tap an IRIS area to see its FIMD position and underlying income indicators.</p>
+      </div>
+      <div class="details-content hidden" id="detailsContent">
+        <div class="kicker" id="communeName">—</div>
+        <h2 id="irisName">—</h2>
+        <div class="score-row">
+          <div>
+            <div class="score" id="scoreValue">—</div>
+            <div class="score-label">deprivation percentile</div>
+          </div>
+          <div id="categoryBadge" class="category">—</div>
+        </div>
+        <dl class="metrics">
+          <div><dt>Affluence percentile</dt><dd id="affluenceValue">—</dd></div>
+          <div><dt>Median disposable income</dt><dd id="incomeValue">—</dd></div>
+          <div><dt>Poverty rate</dt><dd id="povertyValue">—</dd></div>
+          <div><dt>Minimum-social-benefit share</dt><dd id="minimaValue">—</dd></div>
+          <div><dt>Housing-benefit share</dt><dd id="housingValue">—</dd></div>
+          <div><dt>Unemployment-income share</dt><dd id="unemploymentValue">—</dd></div>
+          <div><dt>IRIS code</dt><dd id="irisCodeValue">—</dd></div>
+        </dl>
+      </div>
+      <div class="method-card">
+        <h3>About this score</h3>
+        <p>FIMD is an experimental composite, not an official INSEE index. This first build is income-focused: poverty 40%, low median income 35%, minima sociaux 10%, housing benefits 10%, unemployment-income share 5%.</p>
+        <p class="small">Primary data: INSEE Filosofi 2021 where available; fallback: Filosofi 2020. IRIS geometry: IGN/INSEE via Esri France.</p>
+      </div>
+    </aside>
+  </main>
+
+  <script type="module">
+import maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@5.7.1/+esm";
+import { unzipSync } from "https://cdn.jsdelivr.net/npm/fflate@0.8.2/+esm";
+
+const INSEE_2021_ZIP = "https://www.insee.fr/fr/statistiques/fichier/8229323/BASE_TD_FILO_IRIS_2021_DISP_CSV.zip";
+const FILOSOFI_2020_FALLBACK = "https://raw.githubusercontent.com/josephinebocquet/address-quality-pipeline/main/data/socioeco/BASE_TD_FILO_DISP_IRIS_2020.csv";
+const IRIS_SERVICE = "https://services.arcgis.com/d3voDfTFbHOCRwVR/ArcGIS/rest/services/Contours_IRIS_France__actuel_/FeatureServer/1/query";
+const GEOCODER = "https://data.geopf.fr/geocodage/search";
+const MIN_IRIS_ZOOM = 9;
+
+const COLORS = {
+  purple:"#6f2dbd", green2:"#1f7a4f", green1:"#79b86b", yellow:"#e4cf61",
+  orange:"#e69b45", red1:"#d95c4f", red2:"#8f1d24", nodata:"#cfd4dc"
+};
+
+const $ = id => document.getElementById(id);
+const scoreByCode = new Map();
+let scoreYear = null;
+let visibleFeatures = [];
+let loadAbort = null;
+let selectedCode = null;
+let selectedPopup = null;
+let mapReady = false;
+
+function normCode(value){ return String(value ?? "").trim().toUpperCase(); }
+function parseNumber(value){
+  const s = String(value ?? "").trim().replace(",", ".");
+  if(!s || s.toLowerCase() === "s" || s.toLowerCase() === "nd") return null;
+  const n = Number(s); return Number.isFinite(n) ? n : null;
+}
+
+function parseSemicolonCSV(text){
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter(Boolean);
+  if(!lines.length) return [];
+  const headers = lines.shift().split(";").map(h => h.trim());
+  return lines.map(line => {
+    const cells = line.split(";");
+    const row = {};
+    headers.forEach((h,i) => row[h] = cells[i] ?? "");
+    return row;
+  });
+}
+
+function getField(row, prefixes){
+  const keys = Object.keys(row);
+  for(const prefix of prefixes){
+    const exact = keys.find(k => k === prefix);
+    if(exact) return row[exact];
+    const match = keys.find(k => k.startsWith(prefix));
+    if(match) return row[match];
+  }
+  return null;
+}
+
+function percentileFunction(values){
+  const sorted = values.filter(Number.isFinite).sort((a,b)=>a-b);
+  return value => {
+    if(!Number.isFinite(value) || !sorted.length) return null;
+    let lo=0, hi=sorted.length;
+    while(lo<hi){ const mid=(lo+hi)>>1; if(sorted[mid] <= value) lo=mid+1; else hi=mid; }
+    return (lo / sorted.length) * 100;
+  };
+}
+
+function buildScores(rows, yearLabel){
+  const parsed = rows.map(row => ({
+    code: normCode(getField(row,["IRIS","CODE_IRIS"])),
+    name: getField(row,["LIBIRIS","LIB_IRIS","LIBELLE_IRIS"]),
+    commune: getField(row,["LIBCOM","LIB_COM","LIBELLE_COM"]),
+    income: parseNumber(getField(row,["DISP_MED"])),
+    poverty: parseNumber(getField(row,["DISP_TP60"])),
+    minima: parseNumber(getField(row,["DISP_PPMINI"])),
+    housing: parseNumber(getField(row,["DISP_PPLOGT"])),
+    unemployment: parseNumber(getField(row,["DISP_PCHO"]))
+  })).filter(d => d.code);
+
+  const rPoverty = percentileFunction(parsed.map(d=>d.poverty));
+  const rIncome = percentileFunction(parsed.map(d=>d.income));
+  const rMinima = percentileFunction(parsed.map(d=>d.minima));
+  const rHousing = percentileFunction(parsed.map(d=>d.housing));
+  const rUnemployment = percentileFunction(parsed.map(d=>d.unemployment));
+
+  parsed.forEach(d => {
+    const components = [
+      [Number.isFinite(d.poverty) ? rPoverty(d.poverty) : null, .40],
+      [Number.isFinite(d.income) ? 100-rIncome(d.income) : null, .35],
+      [Number.isFinite(d.minima) ? rMinima(d.minima) : null, .10],
+      [Number.isFinite(d.housing) ? rHousing(d.housing) : null, .10],
+      [Number.isFinite(d.unemployment) ? rUnemployment(d.unemployment) : null, .05]
+    ].filter(([v]) => Number.isFinite(v));
+    const weight = components.reduce((s,[,w])=>s+w,0);
+    d.raw = weight ? components.reduce((s,[v,w])=>s+v*w,0)/weight : null;
+  });
+  const rScore = percentileFunction(parsed.map(d=>d.raw));
+  parsed.forEach(d => {
+    d.depPct = Number.isFinite(d.raw) ? rScore(d.raw) : null;
+    scoreByCode.set(d.code,d);
+  });
+  scoreYear = yearLabel;
+  return parsed.length;
+}
+
+async function loadFilosofi(){
+  const badge = $("dataBadge");
+  badge.className = "status-pill loading";
+  badge.textContent = "Loading INSEE…";
+  try{
+    const response = await fetch(INSEE_2021_ZIP, {mode:"cors"});
+    if(!response.ok) throw new Error(`INSEE ${response.status}`);
+    const archive = unzipSync(new Uint8Array(await response.arrayBuffer()));
+    const csvName = Object.keys(archive).find(name => name.toLowerCase().endsWith(".csv"));
+    if(!csvName) throw new Error("No CSV in INSEE archive");
+    let text;
+    try { text = new TextDecoder("windows-1252").decode(archive[csvName]); }
+    catch { text = new TextDecoder("utf-8").decode(archive[csvName]); }
+    const count = buildScores(parseSemicolonCSV(text), "2021");
+    badge.className = "status-pill ready";
+    badge.textContent = `INSEE 2021 · ${count.toLocaleString("en-GB")} IRIS`;
+    recolourVisible();
+    return;
+  }catch(err){
+    console.warn("INSEE 2021 load failed; using fallback", err);
+  }
+
+  try{
+    const response = await fetch(FILOSOFI_2020_FALLBACK, {mode:"cors"});
+    if(!response.ok) throw new Error(`Fallback ${response.status}`);
+    const count = buildScores(parseSemicolonCSV(await response.text()), "2020");
+    badge.className = "status-pill ready";
+    badge.textContent = `Filosofi 2020 fallback · ${count.toLocaleString("en-GB")} IRIS`;
+    recolourVisible();
+  }catch(err){
+    console.error(err);
+    badge.className = "status-pill warn";
+    badge.textContent = "Income data unavailable";
+  }
+}
+
+function category(depPct){
+  if(!Number.isFinite(depPct)) return {label:"No data",color:COLORS.nodata,text:"#475467"};
+  if(depPct <= 5) return {label:"Extreme affluence",color:COLORS.purple,text:"#fff"};
+  if(depPct <= 20) return {label:"Very affluent",color:COLORS.green2,text:"#fff"};
+  if(depPct <= 40) return {label:"Affluent",color:COLORS.green1,text:"#15361f"};
+  if(depPct <= 60) return {label:"Middle",color:COLORS.yellow,text:"#4b430c"};
+  if(depPct <= 80) return {label:"Moderate deprivation",color:COLORS.orange,text:"#4b2b08"};
+  if(depPct <= 90) return {label:"High deprivation",color:COLORS.red1,text:"#fff"};
+  return {label:"Extreme deprivation",color:COLORS.red2,text:"#fff"};
+}
+
+function featureFill(score, metric){
+  if(!score) return COLORS.nodata;
+  if(metric === "fimd") return category(score.depPct).color;
+  if(metric === "income"){
+    const x=score.income; if(!Number.isFinite(x)) return COLORS.nodata;
+    return x>=42000?COLORS.purple:x>=32000?COLORS.green2:x>=26000?COLORS.green1:x>=22000?COLORS.yellow:x>=18000?COLORS.orange:x>=15000?COLORS.red1:COLORS.red2;
+  }
+  const p=score.poverty; if(!Number.isFinite(p)) return COLORS.nodata;
+  return p>=35?COLORS.red2:p>=25?COLORS.red1:p>=18?COLORS.orange:p>=12?COLORS.yellow:p>=7?COLORS.green1:COLORS.green2;
+}
+
+function decorateFeatures(fc){
+  const metric = $("metricSelect").value;
+  for(const feature of fc.features || []){
+    const code = normCode(feature.properties?.code_iris || feature.properties?.CODE_IRIS);
+    const score = scoreByCode.get(code);
+    feature.properties = {...feature.properties, iris_code:code, fill:featureFill(score,metric)};
+  }
+  return fc;
+}
+
+async function loadVisibleIRIS(){
+  if(!mapReady) return;
+  const zoom = map.getZoom();
+  const notice = $("mapNotice");
+  if(zoom < MIN_IRIS_ZOOM){
+    notice.textContent = "Search for a place or zoom in to reveal IRIS neighbourhoods.";
+    notice.classList.remove("hidden");
+    visibleFeatures = [];
+    const src = map.getSource("iris"); if(src) src.setData({type:"FeatureCollection",features:[]});
+    return;
+  }
+
+  notice.textContent = "Loading neighbourhoods…";
+  notice.classList.remove("hidden");
+  if(loadAbort) loadAbort.abort();
+  loadAbort = new AbortController();
+  const b = map.getBounds();
+  const params = new URLSearchParams({
+    where:"1=1",
+    geometry:`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`,
+    geometryType:"esriGeometryEnvelope",
+    inSR:"4326",
+    outSR:"4326",
+    spatialRel:"esriSpatialRelIntersects",
+    outFields:"code_iris,nom_iris,code_insee,nom_commune,type_iris",
+    returnGeometry:"true",
+    f:"geojson",
+    resultRecordCount:"2000"
+  });
+  try{
+    const response = await fetch(`${IRIS_SERVICE}?${params}`, {signal:loadAbort.signal,mode:"cors"});
+    if(!response.ok) throw new Error(`IRIS service ${response.status}`);
+    const fc = decorateFeatures(await response.json());
+    visibleFeatures = fc.features || [];
+    map.getSource("iris").setData(fc);
+    notice.classList.toggle("hidden", visibleFeatures.length > 0);
+    if(!visibleFeatures.length){ notice.textContent="No IRIS areas returned here."; }
+  }catch(err){
+    if(err.name === "AbortError") return;
+    console.error(err);
+    notice.textContent = "Could not load IRIS boundaries. Try moving the map slightly or refreshing.";
+    notice.classList.remove("hidden");
+  }
+}
+
+function recolourVisible(){
+  if(!mapReady || !visibleFeatures.length) return;
+  const fc = decorateFeatures({type:"FeatureCollection",features:visibleFeatures});
+  map.getSource("iris").setData(fc);
+}
+
+function formatMoney(v){ return Number.isFinite(v) ? new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(v) : "—"; }
+function formatPct(v){ return Number.isFinite(v) ? `${v.toFixed(1)}%` : "—"; }
+function showDetails(properties){
+  const code = normCode(properties.iris_code || properties.code_iris);
+  selectedCode = code;
+  const score = scoreByCode.get(code);
+  $("detailsEmpty").classList.add("hidden");
+  $("detailsContent").classList.remove("hidden");
+  $("communeName").textContent = properties.nom_commune || score?.commune || "France";
+  $("irisName").textContent = properties.nom_iris || score?.name || "IRIS neighbourhood";
+  $("irisCodeValue").textContent = code || "—";
+  if(!score){
+    $("scoreValue").textContent = "—"; $("affluenceValue").textContent="—";
+    ["incomeValue","povertyValue","minimaValue","housingValue","unemploymentValue"].forEach(id=>$(id).textContent="—");
+    const badge=$("categoryBadge"); badge.textContent="No matched Filosofi data";badge.style.background=COLORS.nodata;badge.style.color="#475467";
+    return;
+  }
+  const cat = category(score.depPct);
+  $("scoreValue").textContent = Number.isFinite(score.depPct) ? Math.round(score.depPct) : "—";
+  $("affluenceValue").textContent = Number.isFinite(score.depPct) ? `${(100-score.depPct).toFixed(1)}th` : "—";
+  $("incomeValue").textContent = formatMoney(score.income); $("povertyValue").textContent = formatPct(score.poverty);
+  $("minimaValue").textContent = formatPct(score.minima); $("housingValue").textContent = formatPct(score.housing); $("unemploymentValue").textContent = formatPct(score.unemployment);
+  const badge=$("categoryBadge"); badge.textContent=cat.label;badge.style.background=cat.color;badge.style.color=cat.text;
+}
+
+const map = new maplibregl.Map({
+  container:"map",
+  center:[2.25,46.55],
+  zoom:5.2,
+  minZoom:4.5,
+  maxZoom:17,
+  attributionControl:true,
+  style:{
+    version:8,
+    sources:{
+      osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap contributors"}
+    },
+    layers:[{id:"osm",type:"raster",source:"osm"}]
+  }
+});
+map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-right");
+
+map.on("load",()=>{
+  map.addSource("iris",{type:"geojson",data:{type:"FeatureCollection",features:[]},generateId:true});
+  map.addLayer({id:"iris-fill",type:"fill",source:"iris",paint:{"fill-color":["coalesce",["get","fill"],COLORS.nodata],"fill-opacity":.78}});
+  map.addLayer({id:"iris-line",type:"line",source:"iris",paint:{"line-color":"rgba(255,255,255,.9)","line-width":["interpolate",["linear"],["zoom"],9,.35,14,1.2]}});
+  mapReady = true;
+  loadVisibleIRIS();
+});
+map.on("moveend",loadVisibleIRIS);
+map.on("zoomend",loadVisibleIRIS);
+map.on("mouseenter","iris-fill",()=>map.getCanvas().style.cursor="pointer");
+map.on("mouseleave","iris-fill",()=>map.getCanvas().style.cursor="");
+map.on("click","iris-fill",e=>{
+  const feature=e.features?.[0]; if(!feature) return;
+  showDetails(feature.properties);
+  if(selectedPopup) selectedPopup.remove();
+  const score=scoreByCode.get(normCode(feature.properties.iris_code || feature.properties.code_iris));
+  const cat=category(score?.depPct);
+  selectedPopup = new maplibregl.Popup({closeButton:false,offset:8})
+    .setLngLat(e.lngLat)
+    .setHTML(`<b>${escapeHtml(feature.properties.nom_iris || "IRIS")}</b><br>${escapeHtml(feature.properties.nom_commune || "")}<br><span style="color:${cat.color};font-weight:700">${escapeHtml(cat.label)}</span>`)
+    .addTo(map);
+});
+
+function escapeHtml(s){ return String(s??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c])); }
+
+$("metricSelect").addEventListener("change",recolourVisible);
+$("searchForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+  const q=$("searchInput").value.trim(); if(!q) return;
+  const notice=$("mapNotice"); notice.textContent="Searching…";notice.classList.remove("hidden");
+  try{
+    const params=new URLSearchParams({q,limit:"5"});
+    const response=await fetch(`${GEOCODER}?${params}`,{mode:"cors"});
+    if(!response.ok) throw new Error(`Geocoder ${response.status}`);
+    const data=await response.json();
+    const feature=data.features?.[0];
+    if(!feature?.geometry?.coordinates) throw new Error("No result");
+    const [lng,lat]=feature.geometry.coordinates;
+    map.flyTo({center:[lng,lat],zoom:12,essential:true});
+    notice.textContent=`Found ${feature.properties?.label || feature.properties?.name || q}. Loading IRIS…`;
+  }catch(err){
+    console.error(err); notice.textContent=`No result found for “${q}”.`;
+  }
+});
+
+loadFilosofi();
+if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{})); }
+
+</script>
+</body>
+</html>
